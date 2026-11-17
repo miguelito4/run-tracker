@@ -1,9 +1,9 @@
 -- ============================================
--- Run Tracker — tables (shares the BJJ Tracker Supabase project)
--- Run once in the Supabase SQL editor. Every table is prefixed run_
--- so nothing collides with the BJJ tables. The run app only READS
--- public.sessions (BJJ); it never writes to it.
--- Depends on public.set_updated_at() and public.profiles from the BJJ schema.
+-- Run Tracker — tables
+-- Run once in the Supabase SQL editor, after 000_base.sql. Every table is
+-- prefixed run_ so nothing collides with BJJ Tracker's tables if both share
+-- a project. The app only READS public.sessions (BJJ); it never writes to it.
+-- Depends on public.profiles, public.set_updated_at() and uuid-ossp (000).
 -- ============================================
 
 -- --------------------------------------------
