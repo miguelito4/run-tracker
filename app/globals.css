@@ -78,7 +78,7 @@ textarea.notes { width: 100%; border: 1px solid var(--line); border-radius: 0; p
 .days > div { padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; border-right: 1px solid var(--rule); min-height: 84px; }
 .days > div:last-child { border-right: 0; }
 .days .today { background: #fafafa; }
-.stamp { width: 28px; height: 28px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.stamp { width: 28px; height: 28px; border: 0; padding: 0; font-family: var(--sans); background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
 .stamp.excellent { background: var(--accent); color: var(--ink); font-weight: 800; }
 .stamp.flat { background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink); }
 .stamp.reduced, .stamp.dnr { background: var(--rule); color: var(--ink); }

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { loadActivities, loadBjj, loadCurrentLever, loadSupplements } from "@/lib/data";
-import { addDays, daysBetween, fmtRange, today, weekDays, weekStart, weekdayShort } from "@/lib/dates";
+import { addDays, daysBetween, fmtRange, parse, today, weekDays, weekStart, weekdayShort } from "@/lib/dates";
 import { distance, hoursMinutes } from "@/lib/format";
 import {
   GRADES,
@@ -90,8 +90,11 @@ export default function WeekView({ settings, version, onOpen }: Props) {
   const graded = stats.grades.excellent + stats.grades.good + stats.grades.flat + stats.grades.reduced;
 
   // one-lever progress
-  const leverWeek = lever ? Math.floor(daysBetween(lever.start_date, start) / 7) + 1 : 0;
+  // The block counts weeks that START on or after its start date's week.
+  const leverWeek = lever ? Math.floor(daysBetween(weekStart(lever.start_date), start) / 7) + 1 : 0;
+  const leverUpcoming = lever ? leverWeek < 1 : false;
   const leverDone = lever ? leverWeek > lever.hold_weeks : false;
+  const leverStart = lever ? parse(lever.start_date).toLocaleString("en-US", { month: "short", day: "numeric" }) : "";
 
   return (
     <main>
@@ -207,7 +210,8 @@ export default function WeekView({ settings, version, onOpen }: Props) {
           <span className="card-title">One lever</span>
           {lever && (
             <span className="mono" style={{ fontSize: 12 }}>
-              {lever.lever.toUpperCase()} · {leverDone ? "HOLD DONE" : `WK ${Math.max(leverWeek, 1)} OF ${lever.hold_weeks}`}
+              {lever.lever.toUpperCase()} ·{" "}
+              {leverUpcoming ? `STARTS ${leverStart.toUpperCase()}` : leverDone ? "BLOCK DONE" : `WK ${leverWeek} OF ${lever.hold_weeks}`}
             </span>
           )}
         </div>
@@ -219,7 +223,9 @@ export default function WeekView({ settings, version, onOpen }: Props) {
               ))}
             </div>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.4 }}>
-              {leverDone
+              {leverUpcoming
+                ? `Block starts ${leverStart}.`
+                : leverDone
                 ? "Hold complete. Change one thing now: a bit more time, or a bit faster. Not both."
                 : lever.lever === "hold"
                   ? "Hold steady. Same time and same effort until the block ends."
