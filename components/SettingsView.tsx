@@ -4,7 +4,7 @@ import { ACCENTS, accentById } from "@/lib/accents";
 import { loadActivities, loadCurrentLever, startLever } from "@/lib/data";
 import { today, weekStart } from "@/lib/dates";
 import { supabase } from "@/lib/supabase";
-import type { Lever, LeverKind, Settings } from "@/lib/types";
+import type { Lever, LeverKind, Settings, SyncSummary } from "@/lib/types";
 
 interface Props {
   settings: Settings;
@@ -27,6 +27,9 @@ export default function SettingsView({ settings, onChange, onChanged }: Props) {
   const [newWeeks, setNewWeeks] = useState("3");
   const [newNote, setNewNote] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [sync, setSync] = useState<SyncSummary | null>(settings.garmin_last_result ?? null);
+  const [syncedAt, setSyncedAt] = useState<string | null>(settings.garmin_synced_at ?? null);
 
   useEffect(() => {
     loadCurrentLever().then(setLever).catch(() => {});
@@ -49,6 +52,32 @@ export default function SettingsView({ settings, onChange, onChanged }: Props) {
       setMsg((e as Error).message);
     }
   };
+
+  const runSync = async () => {
+    setSyncing(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const res = await fetch("/api/garmin/sync", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+      });
+      const body = (await res.json()) as SyncSummary;
+      setSync(body);
+      if (body.ok && body.pending === 0) setSyncedAt(new Date().toISOString());
+      if (body.ok) onChanged();
+    } catch (e) {
+      setSync({ ok: false, error: (e as Error).message, scanned: 0, added: 0, updated: 0, merged: 0, pending: 0, errors: [] });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const syncLine = (() => {
+    if (!sync) return syncedAt ? `Last sync ${new Date(syncedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Not synced yet";
+    if (sync.ok === false || sync.error) return `Sync failed: ${sync.error ?? "unknown error"}`;
+    const parts = [`${sync.added} new`, sync.merged ? `${sync.merged} matched to manual entries` : "", sync.pending ? `${sync.pending} still to fetch, tap again` : ""].filter(Boolean);
+    return `${parts.join(" · ")}${sync.errors?.length ? ` · ${sync.errors.length} problem${sync.errors.length > 1 ? "s" : ""}` : ""}`;
+  })();
 
   const exportCsv = async () => {
     const rows = await loadActivities("1900-01-01", "2999-12-31");
@@ -130,9 +159,20 @@ export default function SettingsView({ settings, onChange, onChanged }: Props) {
         <div>
           <div>
             <div className="flabel" style={{ margin: 0 }}>Garmin</div>
-            <div className="mono muted" style={{ fontSize: 11 }}>Not connected yet. Manual entry for now.</div>
+            <div className="mono muted" style={{ fontSize: 11 }} role="status">{syncing ? "Syncing…" : syncLine}</div>
           </div>
+          <button className="ghost" type="button" onClick={runSync} disabled={syncing} style={{ flexShrink: 0 }}>
+            {syncing ? "Syncing…" : "Sync now"}
+          </button>
         </div>
+        {sync?.errors?.length ? (
+          <details style={{ padding: "0 20px 12px", fontSize: 12 }}>
+            <summary className="muted">Sync details</summary>
+            <ul className="mono" style={{ margin: "6px 0 0", paddingLeft: 16 }}>
+              {sync.errors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          </details>
+        ) : null}
       </section>
 
       <section className="section" style={{ borderBottom: "1px solid var(--rule)", gap: 12 }} aria-label="One-lever block">

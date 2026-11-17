@@ -56,6 +56,20 @@ export interface Settings {
   hr_cap: number;
   units: Units;
   show_bjj: boolean;
+  garmin_synced_at?: string | null;
+  garmin_last_result?: SyncSummary | null;
+}
+
+export interface SyncSummary {
+  ok?: boolean;
+  scanned: number;
+  added: number;
+  updated: number;
+  merged: number;
+  pending: number;
+  errors: string[];
+  at?: string;
+  error?: string;
 }
 
 export interface BjjSession {
